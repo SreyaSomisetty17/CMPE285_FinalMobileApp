@@ -3,16 +3,18 @@ const { getDB } = require('../database');
 
 const router = express.Router();
 
-// GET /api/results?sort=loved|divisive|votes&session_id=xxx
+// GET /api/results?sort=loved|divisive|votes|alpha&session_id=xxx
 // Returns aggregate yes/no counts per item
 router.get('/', (req, res) => {
   const db = getDB();
   const { sort = 'loved', session_id } = req.query;
 
   // Aggregate votes per item, optionally include user's vote
-  const sessionClause = (session_id && typeof session_id === 'string' && session_id.length <= 128)
-    ? `MAX(CASE WHEN v.session_id = '${session_id.replace(/'/g, "''")}' THEN v.choice END) AS user_vote`
+  const hasSession = typeof session_id === 'string' && session_id.length > 0 && session_id.length <= 128;
+  const userVoteSelect = hasSession
+    ? 'MAX(CASE WHEN v.session_id = ? THEN v.choice END) AS user_vote'
     : `NULL AS user_vote`;
+  const params = hasSession ? [session_id] : [];
 
   const rows = db.prepare(`
     SELECT
@@ -25,11 +27,11 @@ router.get('/', (req, res) => {
       COUNT(CASE WHEN v.choice = 'yes' THEN 1 END) AS yes_count,
       COUNT(CASE WHEN v.choice = 'no'  THEN 1 END) AS no_count,
       COUNT(v.id) AS total_votes,
-      ${sessionClause}
+      ${userVoteSelect}
     FROM  items i
     LEFT JOIN votes v ON v.item_id = i.id
     GROUP BY i.id
-  `).all();
+  `).all(...params);
 
   // Sort results
   let sorted;
