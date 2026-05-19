@@ -4,6 +4,8 @@ A mobile-first swipe-to-vote web app where users decide: **watch** or **skip** 1
 
 **[🎥 Watch the Demo on YouTube](https://youtu.be/YKYe8Vpz0Vk)**
 
+**[AI Collaboration Notes](AI_NOTES.md)** — placeholder for AI-assisted decisions, review notes, and handoff context.
+
 ---
 
 ## Quick Start
@@ -35,15 +37,18 @@ Open **http://localhost:5173** in a mobile browser or use DevTools → responsiv
 
 ## Architecture
 
-**Backend** — `backend/server.js` is a small Express.js server (Node 18) with five routes:
+**Backend** — `backend/server.js` is a small Express.js server (Node 18) with the main voting API plus health/stat helper endpoints:
 
 | Method | Route | Purpose |
 |--------|-------|---------|
 | GET | `/api/items?session_id=` | List all 100 movies; optionally annotates each with the user's prior vote |
+| GET | `/api/items/:id` | Fetch one movie by ID |
 | POST | `/api/vote` | Record `{ itemId, choice, sessionId }` |
-| DELETE | `/api/vote?itemId=&session_id=` | Undo a vote (pull-down gesture on card) |
+| DELETE | `/api/vote?itemId=&sessionId=` | Undo a vote (pull-down gesture on card) |
 | GET | `/api/results?sort=&session_id=` | Aggregate yes/no counts per film, four sort orders: `loved`, `divisive`, `votes`, `alpha` |
 | GET | `/api/matches?session_id=&threshold=` | Personalized matches: films user voted yes on with global approval ≥ threshold (0.5–0.9) |
+| GET | `/api/stats` | Global totals used by the Results header |
+| GET | `/api/health` | Basic API health check |
 
 Persistence uses **SQLite** via `better-sqlite3`. SQLite was chosen because it requires zero infrastructure, is embedded in the process, has WAL mode for concurrent reads, and is more than sufficient for a local demo with hundreds of users. The database file lives at `backend/data/votes.db` and is gitignored.
 
@@ -55,6 +60,12 @@ Persistence uses **SQLite** via `better-sqlite3`. SQLite was chosen because it r
   - **MatchesView** — Personal recommendations filtered by global approval threshold
 
 **Vite proxy** (`/api → http://localhost:3001`) means the frontend never needs CORS headers during development; both `fetch('/api/items')` and the server live on different ports but behave as same-origin.
+
+---
+
+## AI Notes
+
+Use [`AI_NOTES.md`](AI_NOTES.md) as the visible placeholder for AI contribution notes, review decisions, prompts worth remembering, and future cleanup ideas.
 
 ---
 
@@ -76,7 +87,7 @@ Persistence uses **SQLite** via `better-sqlite3`. SQLite was chosen because it r
 - [x] **User identity** — anonymous session ID (UUID) stored in localStorage, persists across reloads
 - [x] **Undo last swipe** — pull down on card or use mobile pull-down gesture to undo
 - [x] **Matches view** — personal matches with dynamic threshold filtering (50%, 60%, 75%, 90%)
-- [x] **Real-time updating** — results update instantly; matches refilter on threshold change
+- [x] **Fresh results on demand** — results/stats reload when the Results view opens or sort changes; matches refilter on threshold change
 - [x] **Admin/seed script** — seed.js populates SQLite with 100 movies; adding items requires editing movies.json + re-running seed
 - [ ] Analytics — not implemented
 

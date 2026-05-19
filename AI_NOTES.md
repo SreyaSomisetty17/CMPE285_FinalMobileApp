@@ -9,7 +9,7 @@ Claude scaffolded the entire project structure, wrote the initial Express routes
 - **`backend/routes/results.js`** — Initial implementation with sorting logic. Later refined by Claude to improve "Most Loved" sorting with proper yes-rate percentage ranking and tiebreakers.
 - **`backend/routes/matches.js`** — Implemented by Claude to provide personalized matches filtered by global approval threshold. Later enhanced to properly sort and filter by threshold value.
 - **`frontend/src/components/SwipeCard.jsx`** — The Framer Motion drag-to-vote logic, including deriving `yesOpacity`, `noOpacity`, and `rotate` from `useMotionValue`/`useTransform`, was Claude's design. Reviewed and kept because the physics felt right.
-- **`frontend/src/components/ResultsView.jsx`** — Implemented by Claude with four sort options and real-time result display.
+- **`frontend/src/components/ResultsView.jsx`** — Implemented by Claude with four sort options and fresh-on-open result display, including global voter totals.
 - **`frontend/src/components/MatchesView.jsx`** — Implemented by Claude to show personalized matches with dynamic threshold filtering (50%, 60%, 75%, 90%).
 - **`backend/data/movies.json`** — The 100-movie dataset including titles, years, genres, taglines, and TMDB poster paths was compiled by Claude.
 
@@ -25,7 +25,7 @@ const rows = db.prepare(`
 `).all();
 ```
 
-This is a SQL injection vulnerability — a crafted session ID with a `'` could break the query. I pushed back and asked Claude to fix it. Its second solution parameterized the session_id properly using a separate `JOIN` clause with a bound parameter, which is what ended up in the final code.
+This is a SQL injection vulnerability — a crafted session ID with a `'` could break the query. I pushed back and asked Claude to fix it. The final code now binds `session_id` as a query parameter in the user-vote lookup instead of interpolating it into the SQL string.
 
 **Sorting improvements.** Claude's initial "Most Loved" sorting used a `-1` placeholder for items with zero votes, which created inconsistent ordering. User feedback indicated the sorting wasn't correct. Claude refined it to:
 - Rank by yes-rate percentage (highest first)
@@ -33,6 +33,8 @@ This is a SQL injection vulnerability — a crafted session ID with a `'` could 
 - Apply alphabetical ordering as final tiebreaker
 
 Similarly, Claude improved the `MatchesView` to properly sort matches and pending items by yes-rate, ensuring deterministic ranking when threshold changes.
+
+**Freshness note.** The Results and Matches views fetch current data when those views load or when sort/threshold controls change. 
 
 **CardStack optimization.** I also had to review and simplify the `CardStack.jsx` — Claude's first version rendered all 100 cards in the DOM at once (stacked with `display: none`). I redirected it to render only the top 3 cards, which is far better for mobile performance.
 
